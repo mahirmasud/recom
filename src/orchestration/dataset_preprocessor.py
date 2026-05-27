@@ -36,11 +36,17 @@ def _validate_column_exists(df: pd.DataFrame, column_name: str, config_key: str)
         raise DatasetPreprocessError(f"{config_key} not found in dataset: '{column_name}'")
 
 
-def convert_to_recbole_inter(input_path: str, config: dict[str, Any], dataset_name: str | None = None) -> Path:
+def convert_to_recbole_inter(
+    input_path: str,
+    config: dict[str, Any] | None = None,
+    dataset_name: str | None = None,
+) -> Path:
     src = Path(input_path)
     if not src.exists():
         raise DatasetPreprocessError(f"Input dataset not found: {input_path}")
 
+    if config is None:
+        config = {"USER_ID_FIELD": "user_id", "ITEM_ID_FIELD": "item_id", "RATING_FIELD": "rating", "TIME_FIELD": "timestamp"}
     if not isinstance(config, dict):
         raise DatasetPreprocessError("config must be a dictionary")
 
@@ -60,10 +66,12 @@ def convert_to_recbole_inter(input_path: str, config: dict[str, Any], dataset_na
 
     _validate_column_exists(df, user_col, "USER_ID_FIELD")
     _validate_column_exists(df, item_col, "ITEM_ID_FIELD")
-    if rating_col is not None:
-        _validate_column_exists(df, rating_col, "RATING_FIELD")
-    if time_col is not None:
-        _validate_column_exists(df, time_col, "TIME_FIELD")
+    if rating_col is not None and rating_col not in df.columns:
+        logger.warning("RATING_FIELD '%s' not found; defaulting ratings to 1.0", rating_col)
+        rating_col = None
+    if time_col is not None and time_col not in df.columns:
+        logger.warning("TIME_FIELD '%s' not found; defaulting timestamps to 0.0", time_col)
+        time_col = None
 
     dataset = dataset_name or src.stem
 
