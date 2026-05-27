@@ -9,6 +9,7 @@ from typing import List
 
 from src.orchestration.automl_recommender import AutoMLRecommenderOrchestrator, load_mapping
 from src.orchestration.training_orchestrator import TrainingOrchestrator
+from src.orchestration.dataset_preprocessor import convert_to_recbole_inter
 from src.automl.model_selector import AutoMLModelSelector
 from src.automl.tournament import AutoMLTournamentEngine
 from src.utils.schemas import CandidateItem, OrchestrationParams
@@ -55,6 +56,16 @@ def cmd_recommend(args: argparse.Namespace) -> None:
     print(json.dumps(result, indent=2, default=str))
 
 
+def cmd_preprocess(args: argparse.Namespace) -> None:
+    output_path = convert_to_recbole_inter(args.input, args.dataset_name)
+    dataset_name = args.dataset_name or Path(args.input).stem
+    print(f"Converted dataset:\n{output_path}")
+    print("\nTraining command:")
+    print(
+        f"python main.py train --mapping examples/sample_mapping.json --dataset {dataset_name} --device cpu"
+    )
+
+
 def cmd_train(args: argparse.Namespace) -> None:
     orchestrator = AutoMLRecommenderOrchestrator()
     mapping = load_mapping(args.mapping)
@@ -91,6 +102,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_rec.add_argument("--candidates", default=None, help="Optional static seed candidates for debug only")
     p_rec.add_argument("--candidates_mode", default="dynamic", choices=["dynamic", "static"])
     p_rec.set_defaults(func=cmd_recommend)
+
+    p_pre = sub.add_parser("preprocess")
+    p_pre.add_argument("--input", required=True, help="Raw dataset path (.csv/.json/.xlsx/.xls)")
+    p_pre.add_argument("--dataset-name", default=None, help="Optional RecBole dataset folder name")
+    p_pre.set_defaults(func=cmd_preprocess)
 
     p_train = sub.add_parser("train")
     add_common(p_train)
