@@ -19,18 +19,13 @@ pip install -r requirements.txt
 ### 1) Prepare profile + model selection
 
 ```bash
-python main.py prepare \
-  --mapping examples/sample_mapping.json \
-  --device cpu
+python main.py prepare --mapping examples/sample_mapping.json --device cpu
 ```
 
 ### 2) Recommend (default, dynamic retrieval)
 
 ```bash
-python main.py recommend \
-  --mapping examples/sample_mapping.json \
-  --user-id U100 \
-  --device cpu
+python main.py recommend --mapping examples/sample_mapping.json --user-id U100 --device cpu
 ```
 
 ### 3) Recommend with static seed candidates (debug mode only)
@@ -49,10 +44,7 @@ python main.py recommend \
 ### 4) Train AutoML stage tournaments
 
 ```bash
-python main.py train \
-  --mapping examples/sample_mapping.json \
-  --dataset ml-100k \
-  --device cpu
+python main.py train --mapping examples/sample_mapping.json --dataset ml-100k --device cpu
 ```
 
 ## Inference Contract
