@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict
+
+import yaml
 
 from src.utils.schemas import DatasetProfile, OrchestrationParams, StageSelection
 
@@ -38,3 +41,13 @@ class RecBoleConfigGenerator:
             cfg["ITEM_ID_FIELD"] = profile.identity_fields[1] if len(profile.identity_fields) > 1 else "item_id"
             configs[stage_name] = cfg
         return configs
+
+    def dump_yaml(self, configs: Dict[str, Dict[str, Any]], output_dir: str) -> Dict[str, str]:
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        emitted: Dict[str, str] = {}
+        for stage, cfg in configs.items():
+            p = out / f"{stage}.yaml"
+            p.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
+            emitted[stage] = str(p)
+        return emitted

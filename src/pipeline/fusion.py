@@ -8,12 +8,14 @@ from src.utils.schemas import CandidateItem, OrchestrationParams
 class FinalRankingFusionEngine:
     def score(self, items: List[CandidateItem], params: OrchestrationParams) -> List[CandidateItem]:
         personalization_weight = params.personalization_focus_pct / 100.0
+        discovery_weight = params.discovery_factor_pct / 100.0
         promotion_threshold = params.promotions_injection_percentile_threshold
         diversity_index = params.diversity_index
 
         for item in items:
             item.final_score = (
                 (item.model_score * personalization_weight)
+                + (item.metadata.get("global_score", item.model_score) * discovery_weight)
                 + (item.recency_boost * params.recency_decay_coefficient)
                 + (item.sponsored_boost * promotion_threshold)
                 + (item.diversity_penalty * diversity_index)
