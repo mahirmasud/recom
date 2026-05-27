@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import List
 
 from src.pipeline.business_rules import BusinessRuleInjector
 from src.pipeline.fusion import FinalRankingFusionEngine
@@ -17,41 +17,35 @@ class CandidateGenerationPipeline:
 
     def run(
         self,
-        user_id: Any,
+        user_id: str,
         stage_selection: StageSelection,
-        stage_candidates: Dict[str, List[CandidateItem]],
+        retrieval_candidates: List[CandidateItem],
         params: OrchestrationParams,
-    ) -> Dict[str, Any]:
-        retrieval = stage_candidates.get("retrieval", [])[: params.candidate_search_limit]
-        sequential = stage_candidates.get("sequential", retrieval) if stage_selection.sequential else retrieval
-        ranking = stage_candidates.get("ranking", sequential)
+    ) -> dict:
+        retrieval = retrieval_candidates[: params.candidate_search_limit]
 
-        merged = ranking
-        filtered = self.rules.apply(merged, params)
+        LOGGER.info("Ranking stage started: model=%s", stage_selection.ranking)
+        ranking = sorted(retrieval, key=lambda x: x.model_score, reverse=True)
+
+        LOGGER.info("Reranking stage applied: %s", stage_selection.reranking)
+        filtered = self.rules.apply(ranking, params)
         ranked = self.fusion.score(filtered, params)
 
         return {
             "user_id": user_id,
             "selected_models": stage_selection,
+            "candidate_generation_method": "dynamic",
             "applied_rules": {
-                "yield_limit": params.recommendation_yield_limit,
-                "personalization_focus_pct": params.personalization_focus_pct,
-                "discovery_factor_pct": params.discovery_factor_pct,
-                "sponsored_promotions_pct": params.sponsored_promotions_pct,
-                "diversity_index": params.diversity_index,
+                "diversity_constraints": params.diversity_index,
                 "category_cap": params.category_capping_threshold,
                 "recency_decay": params.recency_decay_coefficient,
+                "yield_limit": params.recommendation_yield_limit,
             },
             "filtering_breakdown": {
                 "retrieval_candidates": len(retrieval),
-                "post_sequential": len(sequential),
                 "post_ranking": len(ranking),
                 "post_business_rules": len(filtered),
                 "final": len(ranked),
-            },
-            "metrics": {
-                "avg_final_score": sum(i.final_score for i in ranked) / max(len(ranked), 1),
-                "unique_categories": len({i.category for i in ranked if i.category is not None}),
             },
             "recommendations": ranked,
         }
