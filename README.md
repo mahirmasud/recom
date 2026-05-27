@@ -62,6 +62,56 @@ python main.py train --mapping examples/sample_mapping.json --dataset <dataset_n
 python main.py train --mapping examples/sample_mapping.json --dataset ml-100k --device cpu
 ```
 
+## Using a config file (`--params`)
+
+You can pass runtime orchestration settings from a JSON config file in `prepare`, `recommend`, and `train` commands via `--params`.
+
+### Example config file
+
+Create `config/params.json`:
+
+```json
+{
+  "recommendation_yield_limit": 30,
+  "personalization_focus_pct": 75.0,
+  "discovery_factor_pct": 15.0,
+  "sponsored_promotions_pct": 10.0,
+  "diversity_index": 0.5,
+  "retrieval_batch_size": 512,
+  "candidate_search_limit": 1200,
+  "recency_decay_coefficient": 0.65,
+  "category_capping_threshold": 2,
+  "promotions_injection_percentile_threshold": 0.8
+}
+```
+
+### Example commands with config
+
+```bash
+python main.py prepare \
+  --mapping examples/sample_mapping.json \
+  --params config/params.json \
+  --device cpu
+```
+
+```bash
+python main.py recommend \
+  --mapping examples/sample_mapping.json \
+  --user-id U100 \
+  --params config/params.json \
+  --device cpu
+```
+
+```bash
+python main.py train \
+  --mapping examples/sample_mapping.json \
+  --dataset ml-100k \
+  --params config/params.json \
+  --device cpu
+```
+
+> Note: `preprocess` only converts raw data to RecBole `.inter` format and does not consume `--params`.
+
 ## Inference Contract
 
 For every request, the system returns:
