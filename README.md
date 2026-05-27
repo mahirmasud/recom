@@ -83,3 +83,21 @@ Tune `OrchestrationParams` for:
 - CPU/GPU controlled via `device` in `prepare(...)` and inference.
 - Supports batch inference via `recommend_batch(...)`.
 - Logs model selections for explainability.
+
+
+## Run with `main.py`
+
+### 1) Prepare profile + model selection + configs
+```bash
+python main.py prepare --mapping examples/sample_mapping.json --device cpu --export-yaml-dir generated_configs
+```
+
+### 2) Run inference pipeline
+```bash
+python main.py recommend --mapping examples/sample_mapping.json --candidates examples/sample_candidates.json --user-id U100 --device cpu
+```
+
+### 3) Run AutoML tournament training (requires RecBole-ready dataset)
+```bash
+python main.py train --mapping examples/sample_mapping.json --dataset ml-100k --device cpu
+```
