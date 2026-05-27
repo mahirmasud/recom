@@ -5,3 +5,4 @@ pandas>=2.0
 pyyaml>=6.0
 torch>=2.2
 ray[data,train,tune,serve]>=2.9.3
+kmeans-pytorch>=0.3
