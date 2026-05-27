@@ -4,12 +4,12 @@ Production-grade, modular AutoML recommender orchestration system built on top o
 
 ## Project Structure
 
-- `src/automl/`: dataset profiling, model selection, tournament engine
-- `src/orchestration/`: config generation, training orchestration, system facade
-- `src/pipeline/`: business rules, fusion, candidate pipeline
-- `src/models/`: model integration extension point
-- `src/utils/`: shared schemas
-- `examples/`: runnable example input/output
+- `src/automl/`: dataset profiling, dynamic model selection, AutoML tournament
+- `src/orchestration/`: config generation (dict/YAML), training orchestration, top-level system facade
+- `src/pipeline/`: candidate processing, business rules, final fusion scoring
+- `src/models/`: extension hooks for custom model wrappers
+- `src/utils/`: schemas and shared dataclasses
+- `examples/`: runnable end-to-end demo
 
 ## Setup
 
@@ -19,54 +19,67 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Run Inference Demo
-
-```bash
-python examples/run_example.py
-```
-
-## Run Training (RecBole)
-
-Use `AutoMLRecommenderOrchestrator.prepare(...)` to produce stage configs, then feed configs into `TrainingOrchestrator` and `AutoMLTournamentEngine`.
+## Training Flow
 
 ```python
 from src.orchestration.automl_recommender import AutoMLRecommenderOrchestrator
 from src.orchestration.training_orchestrator import TrainingOrchestrator
 from src.automl.tournament import AutoMLTournamentEngine
+
+orchestrator = AutoMLRecommenderOrchestrator()
+prepared = orchestrator.prepare(mapping_json, params, device="cuda")
+
+trainer = TrainingOrchestrator()
+tournament = AutoMLTournamentEngine(trainer)
 ```
+
+### Optional YAML export
+
+```python
+yaml_paths = orchestrator.config_generator.dump_yaml(prepared["configs"], "./generated_configs")
+```
+
+## Inference Flow
+
+```bash
+python examples/run_example.py
+```
+
+Inference output includes:
+1. ranked recommendation list
+2. stage-wise selected models
+3. applied business rules summary
+4. candidate filtering breakdown
+5. diversity and scoring metrics
 
 ## Orchestration Parameters
 
-Edit `OrchestrationParams` values to control:
-- recommendation yield
-- personalization vs discovery
-- sponsored promotion share
-- diversity constraints
-- retrieval batch sizes
-- search limits
-- recency decay
-- category caps
+Tune `OrchestrationParams` for:
+- `recommendation_yield_limit`
+- `personalization_focus_pct`
+- `discovery_factor_pct`
+- `sponsored_promotions_pct`
+- `diversity_index`
+- `retrieval_batch_size`
+- `candidate_search_limit`
+- `recency_decay_coefficient`
+- `category_capping_threshold`
+- `promotions_injection_percentile_threshold`
 
 ## Pipeline Stages
 
-1. **Dataset Profile Builder** derives sparsity, feature richness, sequence readiness, signal strength, and reliability.
-2. **AutoML Model Selector** dynamically scores candidate models for retrieval, sequential, ranking, and reranking.
-3. **RecBole Config Generator** creates runtime config dictionaries for selected models.
-4. **Tournament Engine** can run candidate model competitions using Recall@K, NDCG@K, and HitRate.
-5. **Candidate Pipeline** executes `Retrieval -> Sequential (optional) -> Ranking -> Reranking`.
-6. **Business Rule Injection** applies yield, discovery, promotions, diversity, category caps, and recency rules.
-7. **Final Fusion Engine** calculates final score composition and ranking output.
+1. **Dataset Profile Builder**: derives sparsity, feature richness, sequence availability, signal strength, and reliability.
+2. **AutoML Model Selector**: dynamically scores all stage candidate models using profile + orchestration features.
+3. **RecBole Config Generator**: emits runtime config dicts and optional YAML files.
+4. **Training Orchestrator**: executes RecBole runs.
+5. **AutoML Tournament Engine**: chooses best model by Recall@K / NDCG@K / Hit@K objective.
+6. **Candidate Pipeline**: Retrieval → Sequential (optional) → Ranking → Reranking.
+7. **Business Rule Injection**: applies yield, sponsorship, diversity, category caps, recency effects.
+8. **Final Fusion Engine**: computes final blended score and output ranking.
 
-## Output Per User Request
+## Engineering Notes
 
-- final ranked recommendation list
-- stage-wise selected models
-- applied business rules summary
-- candidate filtering breakdown
-- diversity and score metrics
-
-## Notes
-
-- No hardcoded single-model choice: scoring uses dataset profile + runtime orchestration params.
-- CPU/GPU switch supported via `device` in prepare/recommend paths.
-- Pipeline supports batch inference by passing per-user candidate batches.
+- Model selection is driven by dataset profile signals + runtime orchestration params (no fixed single-model dependency).
+- CPU/GPU controlled via `device` in `prepare(...)` and inference.
+- Supports batch inference via `recommend_batch(...)`.
+- Logs model selections for explainability.
