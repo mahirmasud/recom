@@ -41,7 +41,22 @@ python main.py recommend \
 
 > In debug static mode, retrieval still runs first; static candidates are merged as seed inputs.
 
-### 4) Train AutoML stage tournaments
+### 4) Convert raw dataset to RecBole `.inter`
+
+```bash
+python main.py preprocess --input path/to/your_dataset.csv
+```
+
+This creates:
+- `dataset/<dataset_name>/<dataset_name>.inter`
+
+And prints the training command:
+
+```bash
+python main.py train --mapping examples/sample_mapping.json --dataset <dataset_name> --device cpu
+```
+
+### 5) Train AutoML stage tournaments
 
 ```bash
 python main.py train --mapping examples/sample_mapping.json --dataset ml-100k --device cpu
