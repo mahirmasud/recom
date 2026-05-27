@@ -1,0 +1,13 @@
+{
+  "identity": ["User_ID", "Item_ID"],
+  "content_features": ["Category", "Price", "Platform", "Rating", "Location"],
+  "interaction_signals": {"click": 0.3, "purchase": 1.0, "rating": 0.6, "timestamp": 0.2},
+  "mapping_provenance": {
+    "field_confidence": {"Category": 0.95, "Price": 0.8, "Platform": 0.77, "Rating": 0.91, "Location": 0.7},
+    "estimated_user_count": 5000,
+    "estimated_item_count": 12000,
+    "estimated_interaction_count": 240000
+  },
+  "ignore": ["SessionID"],
+  "entity_mapping": {"CUSTOMER": ["User_ID"], "PRODUCT": ["Item_ID"], "REVIEW": ["Rating"]}
+}
