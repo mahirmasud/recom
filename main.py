@@ -57,7 +57,7 @@ def cmd_recommend(args: argparse.Namespace) -> None:
 
 
 def cmd_preprocess(args: argparse.Namespace) -> None:
-    output_path = convert_to_recbole_inter(args.input, args.dataset_name)
+    output_path = convert_to_recbole_inter(args.input, dataset_name=args.dataset_name)
     dataset_name = args.dataset_name or Path(args.input).stem
     print(f"Converted dataset:\n{output_path}")
     print("\nTraining command:")
