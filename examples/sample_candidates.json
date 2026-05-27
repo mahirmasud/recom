@@ -1,0 +1,12 @@
+{
+  "retrieval": [
+    {"item_id": "I1", "category": "Books", "model_score": 0.81, "metadata": {"recency": 0.9, "sponsored": true, "global_score": 0.6}},
+    {"item_id": "I2", "category": "Books", "model_score": 0.79, "metadata": {"recency": 0.4, "sponsored": false, "global_score": 0.65}},
+    {"item_id": "I3", "category": "Tech", "model_score": 0.75, "metadata": {"recency": 0.8, "sponsored": false, "global_score": 0.7}}
+  ],
+  "ranking": [
+    {"item_id": "I1", "category": "Books", "model_score": 0.83, "metadata": {"recency": 0.9, "sponsored": true, "global_score": 0.66}},
+    {"item_id": "I3", "category": "Tech", "model_score": 0.80, "metadata": {"recency": 0.8, "sponsored": false, "global_score": 0.7}},
+    {"item_id": "I4", "category": "Home", "model_score": 0.71, "metadata": {"recency": 0.6, "sponsored": false, "global_score": 0.62}}
+  ]
+}
