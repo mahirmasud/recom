@@ -1,17 +1,12 @@
-# AutoML RecBole Recommender Orchestration
+# AutoML RecBole Recommender
 
-Production-grade, modular AutoML recommender orchestration system built on top of RecBole.
+This repository implements a **full, always-on inference pipeline**:
 
-## Project Structure
+**Retrieval → Ranking → Reranking → AutoML orchestration**
 
-- `src/automl/`: dataset profiling, dynamic model selection, AutoML tournament
-- `src/orchestration/`: config generation (dict/YAML), training orchestration, top-level system facade
-- `src/pipeline/`: candidate processing, business rules, final fusion scoring
-- `src/models/`: extension hooks for custom model wrappers
-- `src/utils/`: schemas and shared dataclasses
-- `examples/`: runnable end-to-end demo
+The default recommendation path always generates candidates dynamically from the selected retriever model (LightGCN/BPR/ItemKNN). Static candidates are debug-only and optional.
 
-## Setup
+## Quick Start
 
 ```bash
 python -m venv .venv
@@ -19,85 +14,69 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Training Flow
+## CLI Usage
 
-```python
-from src.orchestration.automl_recommender import AutoMLRecommenderOrchestrator
-from src.orchestration.training_orchestrator import TrainingOrchestrator
-from src.automl.tournament import AutoMLTournamentEngine
-
-orchestrator = AutoMLRecommenderOrchestrator()
-prepared = orchestrator.prepare(mapping_json, params, device="cuda")
-
-trainer = TrainingOrchestrator()
-tournament = AutoMLTournamentEngine(trainer)
-```
-
-### Optional YAML export
-
-```python
-yaml_paths = orchestrator.config_generator.dump_yaml(prepared["configs"], "./generated_configs")
-```
-
-## Inference Flow
+### 1) Prepare profile + model selection
 
 ```bash
-python examples/run_example.py
+python main.py prepare \
+  --mapping examples/sample_mapping.json \
+  --device cpu
 ```
 
-Inference output includes:
-1. ranked recommendation list
-2. stage-wise selected models
-3. applied business rules summary
-4. candidate filtering breakdown
-5. diversity and scoring metrics
+### 2) Recommend (default, dynamic retrieval)
 
-## Orchestration Parameters
-
-Tune `OrchestrationParams` for:
-- `recommendation_yield_limit`
-- `personalization_focus_pct`
-- `discovery_factor_pct`
-- `sponsored_promotions_pct`
-- `diversity_index`
-- `retrieval_batch_size`
-- `candidate_search_limit`
-- `recency_decay_coefficient`
-- `category_capping_threshold`
-- `promotions_injection_percentile_threshold`
-
-## Pipeline Stages
-
-1. **Dataset Profile Builder**: derives sparsity, feature richness, sequence availability, signal strength, and reliability.
-2. **AutoML Model Selector**: dynamically scores all stage candidate models using profile + orchestration features.
-3. **RecBole Config Generator**: emits runtime config dicts and optional YAML files.
-4. **Training Orchestrator**: executes RecBole runs.
-5. **AutoML Tournament Engine**: chooses best model by Recall@K / NDCG@K / Hit@K objective.
-6. **Candidate Pipeline**: Retrieval → Sequential (optional) → Ranking → Reranking.
-7. **Business Rule Injection**: applies yield, sponsorship, diversity, category caps, recency effects.
-8. **Final Fusion Engine**: computes final blended score and output ranking.
-
-## Engineering Notes
-
-- Model selection is driven by dataset profile signals + runtime orchestration params (no fixed single-model dependency).
-- CPU/GPU controlled via `device` in `prepare(...)` and inference.
-- Supports batch inference via `recommend_batch(...)`.
-- Logs model selections for explainability.
-
-
-## Run with `main.py`
-
-### 1) Prepare profile + model selection + configs
 ```bash
-python main.py prepare --mapping examples/sample_mapping.json --device cpu --export-yaml-dir generated_configs
+python main.py recommend \
+  --mapping examples/sample_mapping.json \
+  --user-id U100 \
+  --device cpu
 ```
 
-### 2) Run inference pipeline
+### 3) Recommend with static seed candidates (debug mode only)
+
 ```bash
-python main.py recommend --mapping examples/sample_mapping.json --candidates examples/sample_candidates.json --user-id U100 --device cpu
+python main.py recommend \
+  --mapping examples/sample_mapping.json \
+  --user-id U100 \
+  --candidates examples/sample_candidates.json \
+  --candidates_mode static \
+  --device cpu
 ```
 
-### 3) Run AutoML tournament training (requires RecBole-ready dataset)
+> In debug static mode, retrieval still runs first; static candidates are merged as seed inputs.
+
+### 4) Train AutoML stage tournaments
+
 ```bash
-python main.py train --mapping examples/sample_mapping.json --dataset ml-100k --device cpu
+python main.py train \
+  --mapping examples/sample_mapping.json \
+  --dataset ml-100k \
+  --device cpu
 ```
+
+## Inference Contract
+
+For every request, the system returns:
+- Final ranked recommendation list
+- Retrieval model used
+- Ranking model used
+- Reranker used
+- Candidate generation method
+- Business rules summary
+
+## Pipeline Guarantees
+
+1. **Retrieval always runs first** using AutoML-selected retriever.
+2. **Ranking always runs** on retrieved candidates.
+3. **Reranking always runs** with business rules and final fusion.
+4. **AutoML model selection always runs** and logs selected stage models.
+
+## Important Logging
+
+The pipeline emits:
+- `Retrieval stage started: model=...`
+- `Generated N candidates for user ...`
+- `Ranking stage started: model=...`
+- `Reranking stage applied: ...`
+- `AutoML selected pipeline: {...}`
